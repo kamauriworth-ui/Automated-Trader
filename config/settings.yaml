@@ -1,0 +1,17 @@
+# ---------------------------------------------------------------
+# Non-secret settings for the trading system.
+# Secrets (API keys) do NOT go here — they go in .env.
+# ---------------------------------------------------------------
+
+# Stocks the system will monitor. Add or remove ticker symbols here;
+# no Python code needs to change.
+watchlist:
+  - AAPL
+  - TSLA
+  - NVDA
+
+logging:
+  # How chatty the logs are: DEBUG, INFO, WARNING, ERROR
+  level: INFO
+  # Where the log file is written (folder is created automatically)
+  file: logs/trader.log
