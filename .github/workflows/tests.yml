@@ -1,0 +1,31 @@
+# Runs the tests and the app on GitHub's computers every time code is pushed.
+# See the results in the "Actions" tab of the repository — no setup needed.
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:   # adds a "Run workflow" button in the Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v5
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      - name: Run the automated tests
+        run: python -m pytest -v
+
+      - name: Run the app (with the example settings)
+        run: |
+          cp .env.example .env
+          python -m trader

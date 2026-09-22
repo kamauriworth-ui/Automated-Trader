@@ -1,0 +1,21 @@
+// Tells GitHub Codespaces how to build a ready-to-use cloud computer for this project.
+{
+  "name": "Automated-Trader (Paper Trading)",
+
+  // A Linux machine with Python 3.11 already installed.
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  // Runs once, right after the Codespace is created: installs libraries, creates .env.
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        // Lets you run the tests by tapping the flask (Testing) icon.
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      }
+    }
+  }
+}

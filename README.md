@@ -21,22 +21,34 @@ Alpaca's paper-trading environment.
 | 11 | Testing (expanded) | |
 | 12 | Strategy improvement | |
 
-## Setup (first time)
+## Running it from a tablet or browser (no local Python needed)
+
+**Option A: just check the tests (zero setup).** Every push runs the tests automatically on
+GitHub. Open the repository's **Actions** tab and tap the latest **Tests** run.
+A green check means everything passed.
+
+**Option B: run it yourself in GitHub Codespaces (a cloud computer in your browser).**
+1. On the repository page, switch to the branch you want (the branch dropdown).
+2. Tap **Code → Codespaces → Create codespace on <branch>**.
+3. Wait about 2 minutes while it installs Python and the libraries automatically.
+4. In the terminal at the bottom, type:
+   ```bash
+   python -m trader      # run the app
+   python -m pytest -v   # run the tests
+   ```
+5. When you're done, stop the Codespace (**Code → Codespaces → … → Stop**) to save free hours.
+
+## Running it on your own computer (optional)
 
 Requires Python 3.11 or newer.
 
 ```bash
-python3 -m venv .venv               # create an isolated Python environment
+python3 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\activate
-pip install -r requirements.txt     # install the libraries
+pip install -r requirements.txt
 cp .env.example .env                # Windows: copy .env.example .env
-```
-
-## Run
-
-```bash
-python -m trader      # start the app
-python -m pytest -v   # run the automated tests
+python -m trader
+python -m pytest -v
 ```
 
 ## Project layout
@@ -51,6 +63,8 @@ trader/safety.py       Paper-trading safety checks
 trader/logging_setup.py Logging to terminal + logs/trader.log
 trader/errors.py       Custom error types
 tests/                 Automated tests
+.devcontainer/         Cloud environment setup (GitHub Codespaces)
+.github/workflows/     Runs the tests automatically on GitHub
 ```
 
 ## Safety rules
