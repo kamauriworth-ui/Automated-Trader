@@ -51,3 +51,17 @@ def test_real_settings_file_loads(tmp_path, monkeypatch):
     from trader.config import PROJECT_ROOT
     settings = load_settings(env_file=PROJECT_ROOT / ".env.example")
     assert settings.watchlist == ("AAPL", "TSLA", "NVDA")
+
+
+def test_market_data_defaults():
+    settings = build_settings(GOOD_ENV, GOOD_FILE)
+    assert (settings.market_data_feed, settings.price_adjustment, settings.history_days) == ("iex", "all", 120)
+
+
+@pytest.mark.parametrize(
+    "section",
+    [{"feed": "bloomberg"}, {"adjustment": "sideways"}, {"history_days": 2}, {"history_days": "lots"}],
+)
+def test_bad_market_data_settings_are_rejected(section):
+    with pytest.raises(ConfigError):
+        build_settings(GOOD_ENV, {**GOOD_FILE, "market_data": section})

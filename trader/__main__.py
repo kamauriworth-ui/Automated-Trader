@@ -2,9 +2,10 @@
 
     python -m trader                 # startup checks + paper account status
     python -m trader search apple    # find stocks by name or symbol
+    python -m trader prices          # recent prices + daily candles for the watchlist
 
-Phase 2: connects to Alpaca PAPER trading and READS information only.
-There is no code anywhere in the project that can place an order yet.
+Everything so far only READS information. There is no code anywhere in the
+project that can place an order yet.
 """
 
 import argparse
@@ -57,11 +58,22 @@ def search(settings: Settings, text: str) -> None:
         print(f"  ... and {len(matches) - 25} more. Try a more specific search.")
 
 
+def show_prices(settings: Settings) -> None:
+    from trader.broker.alpaca_paper import AlpacaPaperBroker
+    from trader.market_data.alpaca_data import AlpacaMarketData
+    from trader.market_report import build_price_report
+
+    AlpacaPaperBroker.connect(settings)  # confirms the keys belong to a paper account
+    provider = AlpacaMarketData.from_settings(settings)
+    print(build_price_report(provider, settings.watchlist, settings.history_days, settings.market_data_feed))
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="python -m trader", description="Paper-trading system")
     commands = parser.add_subparsers(dest="command")
     find = commands.add_parser("search", help="find stocks by company name or symbol")
     find.add_argument("text", help="for example: apple, nvidia, anthropic")
+    commands.add_parser("prices", help="show recent prices and daily candles for the watchlist")
     return parser.parse_args(argv)
 
 
@@ -75,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         print_startup_summary(settings)
         if args.command == "search":
             search(settings, args.text)
+        elif args.command == "prices":
+            show_prices(settings)
         else:
             show_status(settings)
     except SafetyError as exc:

@@ -29,6 +29,8 @@ DEFAULT_SETTINGS_FILE = PROJECT_ROOT / "config" / "settings.yaml"
 # A ticker symbol: 1-5 capital letters, optionally a dot and a class letter (e.g. BRK.B).
 SYMBOL_PATTERN = re.compile(r"^[A-Z]{1,5}(\.[A-Z])?$")
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
+DATA_FEEDS = ("iex", "sip")
+PRICE_ADJUSTMENTS = ("raw", "split", "dividend", "all")
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,9 @@ class Settings:
     watchlist: tuple[str, ...]
     log_level: str
     log_file: Path
+    market_data_feed: str = "iex"
+    price_adjustment: str = "all"
+    history_days: int = 120
 
     @property
     def has_api_keys(self) -> bool:
@@ -101,6 +106,21 @@ def parse_logging(raw: object) -> tuple[str, Path]:
     return level, log_file
 
 
+def parse_market_data(raw: object) -> tuple[str, str, int]:
+    """Read the market_data section; fall back to sensible defaults if it is missing."""
+    section = raw if isinstance(raw, dict) else {}
+    feed = str(section.get("feed", "iex")).strip().lower()
+    if feed not in DATA_FEEDS:
+        raise ConfigError(f"market_data.feed must be one of {DATA_FEEDS}, not '{feed}'.")
+    adjustment = str(section.get("adjustment", "all")).strip().lower()
+    if adjustment not in PRICE_ADJUSTMENTS:
+        raise ConfigError(f"market_data.adjustment must be one of {PRICE_ADJUSTMENTS}, not '{adjustment}'.")
+    history_days = section.get("history_days", 120)
+    if not isinstance(history_days, int) or not 5 <= history_days <= 3650:
+        raise ConfigError("market_data.history_days must be a whole number between 5 and 3650.")
+    return feed, adjustment, history_days
+
+
 def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
     """Validate everything and build the Settings object.
 
@@ -110,6 +130,7 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
     safety.run_startup_safety_checks(env)
 
     level, log_file = parse_logging(file_data.get("logging"))
+    feed, adjustment, history_days = parse_market_data(file_data.get("market_data"))
     return Settings(
         paper_trading=True,
         alpaca_base_url=safety.require_paper_endpoint(env.get("ALPACA_BASE_URL")),
@@ -118,6 +139,9 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
         watchlist=parse_watchlist(file_data.get("watchlist")),
         log_level=level,
         log_file=log_file,
+        market_data_feed=feed,
+        price_adjustment=adjustment,
+        history_days=history_days,
     )
 
 

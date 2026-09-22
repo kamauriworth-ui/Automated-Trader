@@ -1,6 +1,7 @@
 """Read-only connection to an Alpaca PAPER trading account.
 
-This is the ONLY file in the project that imports Alpaca's library.
+One of only two files that import Alpaca's library (the other is
+market_data/alpaca_data.py, which can only read prices, never trade).
 
 Safety layers applied here (on top of the startup checks in safety.py):
   1. The Alpaca client is created with paper=True.
@@ -90,9 +91,9 @@ class AlpacaPaperBroker:
         except APIError as exc:
             if exc.status_code == 404:  # "not found": Alpaca doesn't know this symbol
                 return None
-            raise _translate_error("look up " + symbol, exc) from exc
+            raise translate_alpaca_error("look up " + symbol, exc) from exc
         except requests.RequestException as exc:
-            raise _translate_error("look up " + symbol, exc) from exc
+            raise translate_alpaca_error("look up " + symbol, exc) from exc
         return AssetInfo(symbol=raw.symbol, name=raw.name or "", tradable=bool(raw.tradable))
 
     def search_assets(self, text: str) -> list[AssetInfo]:
@@ -113,10 +114,10 @@ class AlpacaPaperBroker:
         try:
             return fn()
         except (APIError, requests.RequestException) as exc:
-            raise _translate_error(what, exc) from exc
+            raise translate_alpaca_error(what, exc) from exc
 
 
-def _translate_error(what: str, exc: Exception) -> BrokerError:
+def translate_alpaca_error(what: str, exc: Exception) -> BrokerError:
     if isinstance(exc, APIError) and exc.status_code in (401, 403):
         return BrokerError(
             f"Alpaca rejected the API keys while trying to {what}. Check that you copied the "

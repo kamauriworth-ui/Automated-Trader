@@ -59,3 +59,60 @@ class FakeBroker:
 
     def search_assets(self, text: str) -> list[AssetInfo]:
         return []
+
+
+# ---------- market data fakes ----------
+
+from datetime import timedelta  # noqa: E402
+
+from trader.market_data.models import Bar, LatestPrice  # noqa: E402
+
+START_DAY = datetime(2026, 9, 1, 4, 0, tzinfo=timezone.utc)  # midnight New York time
+
+
+def make_bar(day: int, close: float, symbol: str = "AAPL", **overrides) -> Bar:
+    """A sensible candle `day` days after START_DAY. Override any field to break it."""
+    fields = dict(
+        symbol=symbol,
+        timestamp=START_DAY + timedelta(days=day),
+        open=close - 1,
+        high=close + 2,
+        low=close - 2,
+        close=close,
+        volume=1_000_000,
+    )
+    fields.update(overrides)
+    return Bar(**fields)
+
+
+class FakeMarketData:
+    """A pretend price source that returns whatever candles we give it."""
+
+    def __init__(self, bars: dict[str, list[Bar]], latest: dict[str, float] | None = None) -> None:
+        self.bars = bars
+        self.latest = latest or {}
+
+    def get_daily_bars(self, symbol: str, days: int) -> list[Bar]:
+        return list(self.bars.get(symbol, []))
+
+    def get_latest_price(self, symbol: str) -> LatestPrice | None:
+        if symbol not in self.latest:
+            return None
+        return LatestPrice(symbol, self.latest[symbol], datetime(2026, 9, 22, 19, 59, tzinfo=timezone.utc))
+
+
+class FakeAlpacaDataClient:
+    """Imitates the parts of Alpaca's StockHistoricalDataClient that we use."""
+
+    def __init__(self) -> None:
+        self.last_bars_request = None
+
+    def get_stock_bars(self, request):
+        self.last_bars_request = request
+        raw = SimpleNamespace(
+            timestamp=START_DAY, open=100.0, high=105.0, low=99.0, close=104.0, volume=5_000_000.0
+        )
+        return SimpleNamespace(data={"AAPL": [raw]})
+
+    def get_stock_latest_trade(self, request):
+        return {"AAPL": SimpleNamespace(price=104.5, timestamp=START_DAY)}

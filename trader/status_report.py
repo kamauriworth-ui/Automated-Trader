@@ -9,17 +9,10 @@ from zoneinfo import ZoneInfo
 from trader.broker.alpaca_paper import mask_account_number
 from trader.broker.base import Broker
 from trader.broker.models import MarketClock
+from trader.formatting import money, signed_money
 
 MARKET_TIMEZONE = ZoneInfo("America/New_York")  # US stock market hours are in Eastern Time
 LINE = "=" * 62
-
-
-def money(value: float) -> str:
-    return f"-${abs(value):,.2f}" if value < 0 else f"${value:,.2f}"
-
-
-def signed_money(value: float) -> str:
-    return ("+" if value >= 0 else "") + money(value)
 
 
 def describe_market(clock: MarketClock) -> str:

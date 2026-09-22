@@ -1,7 +1,8 @@
 """Tests for the status report, using a fake broker (no internet needed)."""
 
 from trader.broker.models import Position
-from trader.status_report import build_status_report, money, signed_money
+from trader.formatting import money, signed_money
+from trader.status_report import build_status_report
 from tests.fakes import FakeBroker
 
 

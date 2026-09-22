@@ -10,7 +10,7 @@ Alpaca's paper-trading environment.
 |---|---|---|
 | 1 | Foundation: config, safety checks, logging | ✅ done |
 | 2 | Alpaca paper connection (read-only) | ✅ done |
-| 3 | Market data layer | |
+| 3 | Market data layer | 🔧 built, awaiting your check |
 | 4 | First simple strategy (signals only) | |
 | 5 | Backtesting | |
 | 6 | Risk management | |
@@ -53,6 +53,7 @@ A green check means everything passed.
    pip install -r requirements.txt   # only needed in a Codespace created before Phase 2
    python -m trader                  # paper account status
    python -m trader search apple     # look up stocks by name or symbol
+   python -m trader prices           # recent prices + daily candles for the watchlist
    ```
 
 Never paste your keys into code, chat messages, or screenshots.
@@ -84,6 +85,11 @@ trader/errors.py       Custom error types
 trader/broker/         Broker layer: models.py (our data shapes), base.py (the Broker
                        checklist), alpaca_paper.py (the ONLY file that uses Alpaca)
 trader/status_report.py Formats the account status report
+trader/market_data/    Price data: models.py (Bar = one candle), base.py (the provider
+                       checklist), processing.py (checks/cleans data),
+                       alpaca_data.py (reads prices from Alpaca)
+trader/market_report.py Formats the price report
+trader/formatting.py   Shared number formatting
 tests/                 Automated tests
 .devcontainer/         Cloud environment setup (GitHub Codespaces)
 .github/workflows/     Runs the tests automatically on GitHub
@@ -98,4 +104,5 @@ tests/                 Automated tests
 5. API keys live only in `.env` (ignored by git) or in Codespaces secrets.
 6. The Alpaca client is created with `paper=True`, and the address it will really use is re-checked.
 7. After connecting, the account number must start with `PA` (Alpaca paper accounts), or the app disconnects.
-8. Phase 2 is read-only: no code in the project can place an order yet.
+8. Everything so far is read-only: no code in the project can place an order yet.
+9. Price data comes from Alpaca's market-data service, which cannot place orders at all.

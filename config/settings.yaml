@@ -18,3 +18,14 @@ logging:
   level: INFO
   # Where the log file is written (folder is created automatically)
   file: logs/trader.log
+
+market_data:
+  # Where prices come from. "iex" is free but covers only ONE stock exchange
+  # (a small slice of all trading). "sip" covers every exchange but needs a paid
+  # Alpaca data plan.
+  feed: iex
+  # Adjust old prices for stock splits and dividends so history lines up with
+  # today's prices. Keep this as "all" unless you know why you'd change it.
+  adjustment: all
+  # How many calendar days of daily candles to fetch (~120 days = ~80 trading days).
+  history_days: 120
