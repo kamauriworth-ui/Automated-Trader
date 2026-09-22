@@ -87,7 +87,8 @@ trader/broker/         Broker layer: models.py (our data shapes), base.py (the B
 trader/status_report.py Formats the account status report
 trader/market_data/    Price data: models.py (Bar = one candle), base.py (the provider
                        checklist), processing.py (checks/cleans data),
-                       alpaca_data.py (reads prices from Alpaca)
+                       alpaca_data.py (reads prices from Alpaca),
+                       snapshot.py (finished-vs-today candles + freshness check)
 trader/market_report.py Formats the price report
 trader/formatting.py   Shared number formatting
 tests/                 Automated tests
@@ -106,3 +107,6 @@ tests/                 Automated tests
 7. After connecting, the account number must start with `PA` (Alpaca paper accounts), or the app disconnects.
 8. Everything so far is read-only: no code in the project can place an order yet.
 9. Price data comes from Alpaca's market-data service, which cannot place orders at all.
+10. Decisions use finished trading days only; today's still-forming candle is kept separate.
+11. While the market is open, prices older than `max_price_age_minutes` (or timestamped in the
+    future) are marked STALE and must not be used for decisions.

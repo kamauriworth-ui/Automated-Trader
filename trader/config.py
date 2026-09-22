@@ -47,6 +47,7 @@ class Settings:
     market_data_feed: str = "iex"
     price_adjustment: str = "all"
     history_days: int = 120
+    max_price_age_minutes: int = 5
 
     @property
     def has_api_keys(self) -> bool:
@@ -106,7 +107,7 @@ def parse_logging(raw: object) -> tuple[str, Path]:
     return level, log_file
 
 
-def parse_market_data(raw: object) -> tuple[str, str, int]:
+def parse_market_data(raw: object) -> tuple[str, str, int, int]:
     """Read the market_data section; fall back to sensible defaults if it is missing."""
     section = raw if isinstance(raw, dict) else {}
     feed = str(section.get("feed", "iex")).strip().lower()
@@ -118,7 +119,10 @@ def parse_market_data(raw: object) -> tuple[str, str, int]:
     history_days = section.get("history_days", 120)
     if not isinstance(history_days, int) or not 5 <= history_days <= 3650:
         raise ConfigError("market_data.history_days must be a whole number between 5 and 3650.")
-    return feed, adjustment, history_days
+    max_age = section.get("max_price_age_minutes", 5)
+    if not isinstance(max_age, int) or not 1 <= max_age <= 60:
+        raise ConfigError("market_data.max_price_age_minutes must be a whole number between 1 and 60.")
+    return feed, adjustment, history_days, max_age
 
 
 def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
@@ -130,7 +134,7 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
     safety.run_startup_safety_checks(env)
 
     level, log_file = parse_logging(file_data.get("logging"))
-    feed, adjustment, history_days = parse_market_data(file_data.get("market_data"))
+    feed, adjustment, history_days, max_age = parse_market_data(file_data.get("market_data"))
     return Settings(
         paper_trading=True,
         alpaca_base_url=safety.require_paper_endpoint(env.get("ALPACA_BASE_URL")),
@@ -142,6 +146,7 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
         market_data_feed=feed,
         price_adjustment=adjustment,
         history_days=history_days,
+        max_price_age_minutes=max_age,
     )
 
 

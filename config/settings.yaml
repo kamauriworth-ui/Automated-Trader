@@ -29,3 +29,6 @@ market_data:
   adjustment: all
   # How many calendar days of daily candles to fetch (~120 days = ~80 trading days).
   history_days: 120
+  # Freshness check: while the market is open, if the newest price is older than
+  # this many minutes, the data is marked STALE and must not be used for decisions.
+  max_price_age_minutes: 5

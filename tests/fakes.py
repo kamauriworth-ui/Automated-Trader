@@ -88,9 +88,17 @@ def make_bar(day: int, close: float, symbol: str = "AAPL", **overrides) -> Bar:
 class FakeMarketData:
     """A pretend price source that returns whatever candles we give it."""
 
-    def __init__(self, bars: dict[str, list[Bar]], latest: dict[str, float] | None = None) -> None:
+    LATEST_TIME = datetime(2026, 9, 22, 19, 59, tzinfo=timezone.utc)  # Tue 3:59 PM ET
+
+    def __init__(
+        self,
+        bars: dict[str, list[Bar]],
+        latest: dict[str, float] | None = None,
+        latest_time: datetime = LATEST_TIME,
+    ) -> None:
         self.bars = bars
         self.latest = latest or {}
+        self.latest_time = latest_time
 
     def get_daily_bars(self, symbol: str, days: int) -> list[Bar]:
         return list(self.bars.get(symbol, []))
@@ -98,7 +106,7 @@ class FakeMarketData:
     def get_latest_price(self, symbol: str) -> LatestPrice | None:
         if symbol not in self.latest:
             return None
-        return LatestPrice(symbol, self.latest[symbol], datetime(2026, 9, 22, 19, 59, tzinfo=timezone.utc))
+        return LatestPrice(symbol, self.latest[symbol], self.latest_time)
 
 
 class FakeAlpacaDataClient:
@@ -116,3 +124,16 @@ class FakeAlpacaDataClient:
 
     def get_stock_latest_trade(self, request):
         return {"AAPL": SimpleNamespace(price=104.5, timestamp=START_DAY)}
+
+
+def utc(year: int, month: int, day: int, hour: int, minute: int = 0, second: int = 0) -> datetime:
+    return datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)
+
+
+def make_clock(is_open: bool, next_open: datetime, next_close: datetime) -> MarketClock:
+    return MarketClock(is_open=is_open, next_open=next_open, next_close=next_close)
+
+
+# Tuesday 2026-09-22. New York is UTC-4 in September, so 09:30 ET = 13:30 UTC and 16:00 ET = 20:00 UTC.
+CLOCK_DURING_TUESDAY = make_clock(True, utc(2026, 9, 23, 13, 30), utc(2026, 9, 22, 20, 0))
+CLOCK_AFTER_TUESDAY_CLOSE = make_clock(False, utc(2026, 9, 23, 13, 30), utc(2026, 9, 23, 20, 0))

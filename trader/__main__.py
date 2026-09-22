@@ -63,9 +63,19 @@ def show_prices(settings: Settings) -> None:
     from trader.market_data.alpaca_data import AlpacaMarketData
     from trader.market_report import build_price_report
 
-    AlpacaPaperBroker.connect(settings)  # confirms the keys belong to a paper account
+    broker = AlpacaPaperBroker.connect(settings)  # confirms the keys belong to a paper account
+    clock = broker.get_market_clock()               # the real market time, from Alpaca
     provider = AlpacaMarketData.from_settings(settings)
-    print(build_price_report(provider, settings.watchlist, settings.history_days, settings.market_data_feed))
+    print(
+        build_price_report(
+            provider,
+            clock,
+            settings.watchlist,
+            settings.history_days,
+            settings.market_data_feed,
+            settings.max_price_age_minutes,
+        )
+    )
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
