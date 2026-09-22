@@ -25,7 +25,7 @@ def format_candle_table(bars: list[Bar]) -> list[str]:
     return lines
 
 
-def build_symbol_section(provider: MarketDataProvider, symbol: str, days: int) -> list[str]:
+def build_symbol_section(provider: MarketDataProvider, symbol: str, days: int, feed: str) -> list[str]:
     bars = fetch_clean_daily_bars(provider, symbol, days)
     summary = summarize_bars(bars)
     latest = provider.get_latest_price(symbol)
@@ -33,9 +33,9 @@ def build_symbol_section(provider: MarketDataProvider, symbol: str, days: int) -
     lines = [symbol]
     if latest is not None:
         when = latest.timestamp.astimezone(MARKET_TIMEZONE)
-        lines.append(f"  Latest trade : {money(latest.price)}  ({when:%a %Y-%m-%d %H:%M} ET)")
+        lines.append(f"  Latest trade     : {money(latest.price)}  ({when:%a %Y-%m-%d %H:%M} ET)")
     else:
-        lines.append("  Latest trade : not available")
+        lines.append("  Latest trade     : not available")
 
     if summary is None:
         lines.append("  No price history returned.")
@@ -43,15 +43,17 @@ def build_symbol_section(provider: MarketDataProvider, symbol: str, days: int) -
 
     change = summary.change_from_previous_close_pct
     lines.append(
-        f"  Last close   : {money(summary.last_close)}"
+        # The close from our data feed. Can differ by a few cents from the official
+        # close, which is set by the main exchange's closing auction.
+        f"  Last close ({feed.upper()}) : {money(summary.last_close)}"
         + (f"  ({percent(change)} vs previous day)" if change is not None else "")
     )
     lines.append(
-        f"  History      : {summary.count} daily candles, "
+        f"  History          : {summary.count} daily candles, "
         f"{summary.first_date.astimezone(MARKET_TIMEZONE):%Y-%m-%d} to "
         f"{summary.last_date.astimezone(MARKET_TIMEZONE):%Y-%m-%d}"
     )
-    lines.append(f"  Range        : low {money(summary.period_low)} / high {money(summary.period_high)}")
+    lines.append(f"  Range            : low {money(summary.period_low)} / high {money(summary.period_high)}")
     lines.append(f"  Last {RECENT_CANDLES_SHOWN} days:")
     lines += format_candle_table(bars[-RECENT_CANDLES_SHOWN:])
     return lines
@@ -60,7 +62,7 @@ def build_symbol_section(provider: MarketDataProvider, symbol: str, days: int) -
 def build_price_report(provider: MarketDataProvider, watchlist: tuple[str, ...], days: int, feed: str) -> str:
     lines = [LINE, f"  MARKET DATA  (daily candles, feed: {feed.upper()})", LINE]
     for symbol in watchlist:
-        lines += build_symbol_section(provider, symbol, days)
+        lines += build_symbol_section(provider, symbol, days, feed)
         lines.append("")
     lines.append(LINE)
     return "\n".join(lines)
