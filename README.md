@@ -9,7 +9,7 @@ Alpaca's paper-trading environment.
 | Phase | What | Status |
 |---|---|---|
 | 1 | Foundation: config, safety checks, logging | ✅ done |
-| 2 | Alpaca paper connection (read-only) | 🔧 built, awaiting your check |
+| 2 | Alpaca paper connection (read-only) | ✅ done |
 | 3 | Market data layer | |
 | 4 | First simple strategy (signals only) | |
 | 5 | Backtesting | |

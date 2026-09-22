@@ -4,7 +4,10 @@
 # ---------------------------------------------------------------
 
 # Stocks the system will monitor. Add or remove ticker symbols here;
-# no Python code needs to change.
+# no Python code needs to change. Find symbols with:  python -m trader search <name>
+#
+# Note: Anthropic is a private company with no stock of its own. The only match
+# at Alpaca (Sept 2026) was an ETF ("ANTW"), so it is deliberately left out.
 watchlist:
   - AAPL
   - TSLA
