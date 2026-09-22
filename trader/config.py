@@ -20,6 +20,7 @@ from dotenv import dotenv_values
 
 from trader.errors import ConfigError
 from trader import safety
+from trader.strategy.trend_momentum import TrendMomentumParams
 
 # The folder that contains this project (one level above the `trader` package).
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -48,6 +49,7 @@ class Settings:
     price_adjustment: str = "all"
     history_days: int = 120
     max_price_age_minutes: int = 5
+    strategy: TrendMomentumParams = TrendMomentumParams()
 
     @property
     def has_api_keys(self) -> bool:
@@ -125,6 +127,21 @@ def parse_market_data(raw: object) -> tuple[str, str, int, int]:
     return feed, adjustment, history_days, max_age
 
 
+def parse_strategy(raw: object) -> TrendMomentumParams:
+    """Read the strategy section; any missing number uses the default."""
+    section = raw if isinstance(raw, dict) else {}
+    defaults = TrendMomentumParams()
+    values = {}
+    for name in ("short_ma_days", "long_ma_days", "momentum_days", "volume_avg_days", "atr_days"):
+        value = section.get(name, getattr(defaults, name))
+        if not isinstance(value, int) or isinstance(value, bool) or not 2 <= value <= 250:
+            raise ConfigError(f"strategy.{name} must be a whole number between 2 and 250.")
+        values[name] = value
+    if values["short_ma_days"] >= values["long_ma_days"]:
+        raise ConfigError("strategy.short_ma_days must be smaller than strategy.long_ma_days.")
+    return TrendMomentumParams(**values)
+
+
 def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
     """Validate everything and build the Settings object.
 
@@ -147,6 +164,7 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
         price_adjustment=adjustment,
         history_days=history_days,
         max_price_age_minutes=max_age,
+        strategy=parse_strategy(file_data.get("strategy")),
     )
 
 

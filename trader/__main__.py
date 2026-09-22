@@ -3,6 +3,7 @@
     python -m trader                 # startup checks + paper account status
     python -m trader search apple    # find stocks by name or symbol
     python -m trader prices          # recent prices + daily candles for the watchlist
+    python -m trader signals         # BUY / SELL / WATCH for each watchlist stock (no orders)
 
 Everything so far only READS information. There is no code anywhere in the
 project that can place an order yet.
@@ -78,12 +79,29 @@ def show_prices(settings: Settings) -> None:
     )
 
 
+def show_signals(settings: Settings) -> None:
+    from trader.broker.alpaca_paper import AlpacaPaperBroker
+    from trader.market_data.alpaca_data import AlpacaMarketData
+    from trader.signals_report import build_signals_report, evaluate_watchlist
+    from trader.strategy.trend_momentum import TrendMomentumStrategy
+
+    broker = AlpacaPaperBroker.connect(settings)
+    clock = broker.get_market_clock()
+    provider = AlpacaMarketData.from_settings(settings)
+    strategy = TrendMomentumStrategy(settings.strategy)
+    results = evaluate_watchlist(
+        strategy, provider, clock, settings.watchlist, settings.history_days, settings.max_price_age_minutes
+    )
+    print(build_signals_report(results, strategy.name, clock))
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="python -m trader", description="Paper-trading system")
     commands = parser.add_subparsers(dest="command")
     find = commands.add_parser("search", help="find stocks by company name or symbol")
     find.add_argument("text", help="for example: apple, nvidia, anthropic")
     commands.add_parser("prices", help="show recent prices and daily candles for the watchlist")
+    commands.add_parser("signals", help="show BUY / SELL / WATCH signals (no orders are placed)")
     return parser.parse_args(argv)
 
 
@@ -99,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
             search(settings, args.text)
         elif args.command == "prices":
             show_prices(settings)
+        elif args.command == "signals":
+            show_signals(settings)
         else:
             show_status(settings)
     except SafetyError as exc:

@@ -65,3 +65,17 @@ def test_market_data_defaults():
 def test_bad_market_data_settings_are_rejected(section):
     with pytest.raises(ConfigError):
         build_settings(GOOD_ENV, {**GOOD_FILE, "market_data": section})
+
+
+def test_strategy_defaults():
+    params = build_settings(GOOD_ENV, GOOD_FILE).strategy
+    assert (params.short_ma_days, params.long_ma_days, params.momentum_days) == (20, 50, 10)
+
+
+@pytest.mark.parametrize(
+    "section",
+    [{"short_ma_days": 50, "long_ma_days": 20}, {"momentum_days": 0}, {"atr_days": "fourteen"}, {"long_ma_days": True}],
+)
+def test_bad_strategy_settings_are_rejected(section):
+    with pytest.raises(ConfigError):
+        build_settings(GOOD_ENV, {**GOOD_FILE, "strategy": section})

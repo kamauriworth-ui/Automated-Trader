@@ -32,3 +32,13 @@ market_data:
   # Freshness check: while the market is open, if the newest price is older than
   # this many minutes, the data is marked STALE and must not be used for decisions.
   max_price_age_minutes: 5
+
+strategy:
+  # Trend/Momentum strategy settings (see trader/strategy/trend_momentum.py).
+  # All counts are TRADING days. These are common starting points, not proven
+  # best values - Phase 5 (backtesting) is where we test alternatives.
+  short_ma_days: 20     # "recent direction" moving average
+  long_ma_days: 50      # "bigger direction" moving average
+  momentum_days: 10     # compare today's close with this many days ago
+  volume_avg_days: 20   # compare today's volume with the average of this many days
+  atr_days: 14          # volatility measure (shown only; used for stop-losses in Phase 6)

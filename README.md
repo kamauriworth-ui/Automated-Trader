@@ -11,7 +11,7 @@ Alpaca's paper-trading environment.
 | 1 | Foundation: config, safety checks, logging | ✅ done |
 | 2 | Alpaca paper connection (read-only) | ✅ done |
 | 3 | Market data layer | ✅ done |
-| 4 | First simple strategy (signals only) | |
+| 4 | First simple strategy (signals only) | 🔧 built, awaiting your check |
 | 5 | Backtesting | |
 | 6 | Risk management | |
 | 7 | Paper order execution | |
@@ -54,6 +54,7 @@ A green check means everything passed.
    python -m trader                  # paper account status
    python -m trader search apple     # look up stocks by name or symbol
    python -m trader prices           # recent prices + daily candles for the watchlist
+   python -m trader signals          # BUY / SELL / WATCH per stock, with reasons (no orders)
    ```
 
 Never paste your keys into code, chat messages, or screenshots.
@@ -91,6 +92,9 @@ trader/market_data/    Price data: models.py (Bar = one candle), base.py (the pr
                        snapshot.py (finished-vs-today candles + freshness check)
 trader/market_report.py Formats the price report
 trader/formatting.py   Shared number formatting
+trader/strategy/       indicators.py (moving averages, momentum, volume, ATR),
+                       trend_momentum.py (the BUY/SELL/WATCH rules), models.py, base.py
+trader/signals_report.py Runs the strategy on the watchlist, logs + prints each decision
 tests/                 Automated tests
 .devcontainer/         Cloud environment setup (GitHub Codespaces)
 .github/workflows/     Runs the tests automatically on GitHub
@@ -110,3 +114,4 @@ tests/                 Automated tests
 10. Decisions use finished trading days only; today's still-forming candle is kept separate.
 11. While the market is open, prices older than `max_price_age_minutes` (or timestamped in the
     future) are marked STALE and must not be used for decisions.
+12. The strategy returns WATCH (no decision) whenever data is stale or history is too short.
