@@ -1,4 +1,5 @@
-# Phase 1 dependencies. We only add a library when we actually need it.
+# We only add a library when we actually need it.
 python-dotenv==1.2.3   # reads secrets/settings from the .env file
 PyYAML==6.0.3          # reads config/settings.yaml
 pytest==9.1.1          # runs our automated tests
+alpaca-py==0.44.0      # Alpaca's official library (Phase 2: read-only account access)

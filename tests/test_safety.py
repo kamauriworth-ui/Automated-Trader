@@ -65,3 +65,18 @@ def test_conflicting_alpaca_url_variable_is_rejected():
     env = {**GOOD_ENV, "APCA_API_BASE_URL": "https://api.alpaca.markets"}
     with pytest.raises(SafetyError):
         safety.run_startup_safety_checks(env)
+
+
+def test_paper_account_number_is_accepted():
+    safety.require_paper_account("PA3ABCDEFGH")
+
+
+@pytest.mark.parametrize("number", [None, "", "123456789", "LIVE123", "pa3abc"])
+def test_non_paper_account_numbers_are_rejected(number):
+    with pytest.raises(SafetyError):
+        safety.require_paper_account(number)
+
+
+def test_client_pointed_at_live_url_is_rejected():
+    with pytest.raises(SafetyError):
+        safety.require_paper_client_url("https://api.alpaca.markets")

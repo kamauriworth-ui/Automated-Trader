@@ -19,6 +19,9 @@ PAPER_API_URL = "https://paper-api.alpaca.markets"
 # Alpaca paper-account API key IDs start with "PK". Live keys start differently.
 PAPER_KEY_PREFIX = "PK"
 
+# Alpaca paper ACCOUNT numbers start with "PA". Checked after connecting.
+PAPER_ACCOUNT_PREFIX = "PA"
+
 # Environment variable names that Alpaca's own tools may read on their own.
 # If any of them point somewhere other than the paper URL, the setup is
 # ambiguous and we refuse to start.
@@ -82,6 +85,28 @@ def require_no_conflicting_alpaca_urls(env: Mapping[str, str]) -> None:
                 f"The environment variable {name} is set to {value!r}. It conflicts with "
                 "paper-only trading. Remove it or set it to the paper URL."
             )
+
+
+def require_paper_client_url(url: object) -> None:
+    """Double-check the address the Alpaca library will actually use.
+
+    Alpaca's library stores the address as an "enum" (a labelled constant), so
+    we take its `.value` (the actual text) when there is one.
+    """
+    text = str(getattr(url, "value", url))
+    if text.rstrip("/") != PAPER_API_URL:
+        raise SafetyError(
+            f"The Alpaca client is pointed at {url!r} instead of {PAPER_API_URL}. Refusing to continue."
+        )
+
+
+def require_paper_account(account_number: str | None) -> None:
+    """After connecting, ask Alpaca which account we reached. It must be a paper account."""
+    if not account_number or not account_number.startswith(PAPER_ACCOUNT_PREFIX):
+        raise SafetyError(
+            f"Connected account number does not start with {PAPER_ACCOUNT_PREFIX!r}, so it does "
+            "not look like a paper account. Disconnecting. Do not bypass this check."
+        )
 
 
 def run_startup_safety_checks(env: Mapping[str, str]) -> None:

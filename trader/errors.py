@@ -15,3 +15,7 @@ class ConfigError(TraderError):
 
 class SafetyError(TraderError):
     """Something could lead to live (real-money) trading. The app must stop."""
+
+
+class BrokerError(TraderError):
+    """Talking to the broker (Alpaca) failed: bad keys, no internet, outage, ..."""

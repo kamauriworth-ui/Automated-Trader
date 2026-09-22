@@ -9,7 +9,7 @@ Alpaca's paper-trading environment.
 | Phase | What | Status |
 |---|---|---|
 | 1 | Foundation: config, safety checks, logging | ✅ done |
-| 2 | Alpaca paper connection (read-only) | ⏳ next |
+| 2 | Alpaca paper connection (read-only) | 🔧 built, awaiting your check |
 | 3 | Market data layer | |
 | 4 | First simple strategy (signals only) | |
 | 5 | Backtesting | |
@@ -38,6 +38,25 @@ A green check means everything passed.
    ```
 5. When you're done, stop the Codespace (**Code → Codespaces → … → Stop**) to save free hours.
 
+## Connecting your Alpaca paper account (Phase 2)
+
+1. Sign up at alpaca.markets (free). Paper trading needs no deposit.
+2. In the Alpaca dashboard, make sure the **Paper** account is selected (account switcher, top-left).
+3. Find **API Keys** on the paper dashboard and choose **Generate New Keys**.
+   The Key ID starts with `PK`. The Secret is shown **only once**, so copy it right away.
+4. On GitHub: your profile picture → **Settings** → **Codespaces** → **New secret**. Add two secrets,
+   and under "Repository access" pick this repository for each:
+   - `ALPACA_API_KEY` = your Key ID
+   - `ALPACA_SECRET_KEY` = your Secret
+5. Start (or restart) your Codespace so it picks up the secrets, then run:
+   ```bash
+   pip install -r requirements.txt   # only needed in a Codespace created before Phase 2
+   python -m trader                  # paper account status
+   python -m trader search apple     # look up stocks by name or symbol
+   ```
+
+Never paste your keys into code, chat messages, or screenshots.
+
 ## Running it on your own computer (optional)
 
 Requires Python 3.11 or newer.
@@ -62,6 +81,9 @@ trader/config.py       Loads and validates all settings
 trader/safety.py       Paper-trading safety checks
 trader/logging_setup.py Logging to terminal + logs/trader.log
 trader/errors.py       Custom error types
+trader/broker/         Broker layer: models.py (our data shapes), base.py (the Broker
+                       checklist), alpaca_paper.py (the ONLY file that uses Alpaca)
+trader/status_report.py Formats the account status report
 tests/                 Automated tests
 .devcontainer/         Cloud environment setup (GitHub Codespaces)
 .github/workflows/     Runs the tests automatically on GitHub
@@ -73,4 +95,7 @@ tests/                 Automated tests
 2. `ALPACA_BASE_URL` must be exactly `https://paper-api.alpaca.markets` (allow-list).
 3. An API key that doesn't start with `PK` (Alpaca's paper key prefix) is rejected.
 4. Other Alpaca URL variables in your environment that point anywhere else are rejected.
-5. API keys live only in `.env`, which git ignores.
+5. API keys live only in `.env` (ignored by git) or in Codespaces secrets.
+6. The Alpaca client is created with `paper=True`, and the address it will really use is re-checked.
+7. After connecting, the account number must start with `PA` (Alpaca paper accounts), or the app disconnects.
+8. Phase 2 is read-only: no code in the project can place an order yet.
