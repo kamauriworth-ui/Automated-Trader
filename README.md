@@ -11,7 +11,7 @@ Alpaca's paper-trading environment.
 | 1 | Foundation: config, safety checks, logging | ✅ done |
 | 2 | Alpaca paper connection (read-only) | ✅ done |
 | 3 | Market data layer | ✅ done |
-| 4 | First simple strategy (signals only) | 🔧 built, awaiting your check |
+| 4 | First simple strategy (signals only) | ✅ done |
 | 5 | Backtesting | |
 | 6 | Risk management | |
 | 7 | Paper order execution | |
