@@ -4,6 +4,9 @@
     python -m trader search apple    # find stocks by name or symbol
     python -m trader prices          # recent prices + daily candles for the watchlist
     python -m trader signals         # BUY / SELL / WATCH for each watchlist stock (no orders)
+    python -m trader backtest        # test the strategy on past years (development period)
+    python -m trader backtest --holdout   # the sealed final exam - run once, at the end
+    python -m trader backtest --all-trades  # also print every single trade
 
 Everything so far only READS information. There is no code anywhere in the
 project that can place an order yet.
@@ -95,6 +98,40 @@ def show_signals(settings: Settings) -> None:
     print(build_signals_report(results, strategy.name, clock))
 
 
+def run_backtest_command(settings: Settings, holdout: bool, all_trades: bool) -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from trader.backtest.data import compute_periods, load_history, warmup_calendar_days
+    from trader.backtest.engine import run_backtest
+    from trader.backtest.report import build_backtest_report, save_trades_csv
+    from trader.broker.alpaca_paper import AlpacaPaperBroker
+    from trader.config import PROJECT_ROOT
+    from trader.market_data.alpaca_data import AlpacaMarketData
+    from trader.market_data.snapshot import market_date
+    from trader.strategy.trend_momentum import TrendMomentumStrategy
+
+    bt = settings.backtest
+    broker = AlpacaPaperBroker.connect(settings)
+    clock = broker.get_market_clock()
+    now = datetime.now(timezone.utc)
+    development, holdout_period = compute_periods(market_date(now), bt.years, bt.holdout_years)
+    if holdout and holdout_period is None:
+        raise ConfigError("There is no holdout period: backtest.holdout_years is 0 in settings.yaml.")
+    period = holdout_period if holdout else development
+
+    strategy = TrendMomentumStrategy(settings.strategy)
+    warmup = timedelta(days=warmup_calendar_days(strategy.params.days_needed))
+    start = datetime.combine(period.start, datetime.min.time(), tzinfo=timezone.utc) - warmup
+    log.info("Backtest: downloading history for %s from %s", ", ".join(settings.watchlist), start.date())
+    provider = AlpacaMarketData.from_settings(settings)
+    bars, feed_used = load_history(provider, settings.watchlist, start, clock, bt.feed, now)
+
+    result = run_backtest(strategy, bars, period, bt, feed_used)
+    print(build_backtest_report(result, all_trades))
+    path = save_trades_csv(result, PROJECT_ROOT / "results")
+    print(f"All trades saved to: {path.relative_to(PROJECT_ROOT)}")
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="python -m trader", description="Paper-trading system")
     commands = parser.add_subparsers(dest="command")
@@ -102,6 +139,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     find.add_argument("text", help="for example: apple, nvidia, anthropic")
     commands.add_parser("prices", help="show recent prices and daily candles for the watchlist")
     commands.add_parser("signals", help="show BUY / SELL / WATCH signals (no orders are placed)")
+    backtest = commands.add_parser("backtest", help="test the strategy on past years")
+    backtest.add_argument("--holdout", action="store_true", help="run the sealed final-exam period instead")
+    backtest.add_argument("--all-trades", action="store_true", help="print every trade, not just the best and worst")
     return parser.parse_args(argv)
 
 
@@ -119,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
             show_prices(settings)
         elif args.command == "signals":
             show_signals(settings)
+        elif args.command == "backtest":
+            run_backtest_command(settings, args.holdout, args.all_trades)
         else:
             show_status(settings)
     except SafetyError as exc:

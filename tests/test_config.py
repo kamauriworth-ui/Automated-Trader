@@ -79,3 +79,17 @@ def test_strategy_defaults():
 def test_bad_strategy_settings_are_rejected(section):
     with pytest.raises(ConfigError):
         build_settings(GOOD_ENV, {**GOOD_FILE, "strategy": section})
+
+
+def test_backtest_defaults():
+    bt = build_settings(GOOD_ENV, GOOD_FILE).backtest
+    assert (bt.years, bt.holdout_years, bt.trade_amount, bt.slippage_pct, bt.feed) == (5, 1, 10_000, 0.05, "sip")
+
+
+@pytest.mark.parametrize(
+    "section",
+    [{"years": 2, "holdout_years": 2}, {"slippage_pct": 5}, {"trade_amount": 0}, {"feed": "nasdaq"}, {"years": True}],
+)
+def test_bad_backtest_settings_are_rejected(section):
+    with pytest.raises(ConfigError):
+        build_settings(GOOD_ENV, {**GOOD_FILE, "backtest": section})

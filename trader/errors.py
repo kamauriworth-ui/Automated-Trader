@@ -19,3 +19,7 @@ class SafetyError(TraderError):
 
 class BrokerError(TraderError):
     """Talking to the broker (Alpaca) failed: bad keys, no internet, outage, ..."""
+
+
+class DataFeedNotPermittedError(BrokerError):
+    """The account's data plan doesn't allow the requested data feed (e.g. recent SIP data)."""

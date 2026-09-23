@@ -12,7 +12,7 @@ Alpaca's paper-trading environment.
 | 2 | Alpaca paper connection (read-only) | ✅ done |
 | 3 | Market data layer | ✅ done |
 | 4 | First simple strategy (signals only) | ✅ done |
-| 5 | Backtesting | |
+| 5 | Backtesting | 🔧 built, awaiting your check |
 | 6 | Risk management | |
 | 7 | Paper order execution | |
 | 8 | Position management | |
@@ -55,6 +55,8 @@ A green check means everything passed.
    python -m trader search apple     # look up stocks by name or symbol
    python -m trader prices           # recent prices + daily candles for the watchlist
    python -m trader signals          # BUY / SELL / WATCH per stock, with reasons (no orders)
+   python -m trader backtest         # test the strategy on past years (development period)
+   python -m trader backtest --holdout  # the sealed final exam: run once, at the end
    ```
 
 Never paste your keys into code, chat messages, or screenshots.
@@ -95,6 +97,9 @@ trader/formatting.py   Shared number formatting
 trader/strategy/       indicators.py (moving averages, momentum, volume, ATR),
                        trend_momentum.py (the BUY/SELL/WATCH rules), models.py, base.py
 trader/signals_report.py Runs the strategy on the watchlist, logs + prints each decision
+trader/backtest/       engine.py (day-by-day replay), metrics.py (win rate, drawdown...),
+                       data.py (periods, warm-up, SIP->IEX fallback), report.py, models.py
+results/               Backtest trade lists as CSV (not committed to git)
 tests/                 Automated tests
 .devcontainer/         Cloud environment setup (GitHub Codespaces)
 .github/workflows/     Runs the tests automatically on GitHub

@@ -21,6 +21,7 @@ from dotenv import dotenv_values
 from trader.errors import ConfigError
 from trader import safety
 from trader.strategy.trend_momentum import TrendMomentumParams
+from trader.backtest.models import BacktestSettings
 
 # The folder that contains this project (one level above the `trader` package).
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +51,7 @@ class Settings:
     history_days: int = 120
     max_price_age_minutes: int = 5
     strategy: TrendMomentumParams = TrendMomentumParams()
+    backtest: BacktestSettings = BacktestSettings()
 
     @property
     def has_api_keys(self) -> bool:
@@ -142,6 +144,35 @@ def parse_strategy(raw: object) -> TrendMomentumParams:
     return TrendMomentumParams(**values)
 
 
+def _number(section: dict, name: str, default, low: float, high: float, whole: bool = False):
+    value = section.get(name, default)
+    ok_type = isinstance(value, int) if whole else isinstance(value, (int, float))
+    if isinstance(value, bool) or not ok_type or not low <= value <= high:
+        kind = "a whole number" if whole else "a number"
+        raise ConfigError(f"backtest.{name} must be {kind} between {low:g} and {high:g}.")
+    return value
+
+
+def parse_backtest(raw: object) -> BacktestSettings:
+    """Read the backtest section; any missing value uses the default."""
+    section = raw if isinstance(raw, dict) else {}
+    d = BacktestSettings()
+    years = _number(section, "years", d.years, 1, 20, whole=True)
+    holdout = _number(section, "holdout_years", d.holdout_years, 0, 19, whole=True)
+    if holdout >= years:
+        raise ConfigError("backtest.holdout_years must be smaller than backtest.years.")
+    feed = str(section.get("feed", d.feed)).strip().lower()
+    if feed not in DATA_FEEDS:
+        raise ConfigError(f"backtest.feed must be one of {DATA_FEEDS}, not '{feed}'.")
+    return BacktestSettings(
+        years=years,
+        holdout_years=holdout,
+        trade_amount=float(_number(section, "trade_amount", d.trade_amount, 100, 1_000_000)),
+        slippage_pct=float(_number(section, "slippage_pct", d.slippage_pct, 0, 2)),
+        feed=feed,
+    )
+
+
 def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
     """Validate everything and build the Settings object.
 
@@ -165,6 +196,7 @@ def build_settings(env: Mapping[str, str], file_data: Mapping) -> Settings:
         history_days=history_days,
         max_price_age_minutes=max_age,
         strategy=parse_strategy(file_data.get("strategy")),
+        backtest=parse_backtest(file_data.get("backtest")),
     )
 
 

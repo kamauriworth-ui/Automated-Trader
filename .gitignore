@@ -10,8 +10,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-# Log files (generated when the app runs)
+# Log files and backtest output (generated when the app runs)
 logs/
+results/
 
 # Editor / OS clutter
 .vscode/

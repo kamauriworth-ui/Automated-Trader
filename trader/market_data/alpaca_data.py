@@ -15,7 +15,7 @@ from alpaca.data.timeframe import TimeFrame
 
 from trader.broker.alpaca_paper import translate_alpaca_error
 from trader.config import Settings
-from trader.errors import ConfigError
+from trader.errors import ConfigError, DataFeedNotPermittedError
 from trader.market_data.models import Bar, LatestPrice
 
 
@@ -44,18 +44,45 @@ class AlpacaMarketData:
             bar_set = self._client.get_stock_bars(request)
         except (APIError, requests.RequestException) as exc:
             raise translate_alpaca_error(f"get price history for {symbol}", exc) from exc
-        return [
-            Bar(
-                symbol=symbol,
-                timestamp=b.timestamp,
-                open=float(b.open),
-                high=float(b.high),
-                low=float(b.low),
-                close=float(b.close),
-                volume=float(b.volume),
-            )
-            for b in bar_set.data.get(symbol, [])
-        ]
+        return [self._to_bar(symbol, b) for b in bar_set.data.get(symbol, [])]
+
+    def get_daily_bars_range(self, symbol: str, start: datetime, end: datetime, feed: str) -> list[Bar]:
+        """Daily candles between two moments, from a specific feed (used by backtesting).
+
+        Raises DataFeedNotPermittedError if the account's data plan refuses this feed,
+        so the caller can fall back to another one.
+        """
+        request = StockBarsRequest(
+            symbol_or_symbols=symbol,
+            timeframe=TimeFrame.Day,
+            start=start,
+            end=end,
+            feed=DataFeed(feed),
+            adjustment=self._adjustment,
+        )
+        try:
+            bar_set = self._client.get_stock_bars(request)
+        except APIError as exc:
+            if exc.status_code == 403 and "subscription" in str(exc).lower():
+                raise DataFeedNotPermittedError(
+                    f"Your Alpaca data plan does not allow the '{feed}' feed for this request."
+                ) from exc
+            raise translate_alpaca_error(f"get price history for {symbol}", exc) from exc
+        except requests.RequestException as exc:
+            raise translate_alpaca_error(f"get price history for {symbol}", exc) from exc
+        return [self._to_bar(symbol, b) for b in bar_set.data.get(symbol, [])]
+
+    @staticmethod
+    def _to_bar(symbol: str, b) -> Bar:
+        return Bar(
+            symbol=symbol,
+            timestamp=b.timestamp,
+            open=float(b.open),
+            high=float(b.high),
+            low=float(b.low),
+            close=float(b.close),
+            volume=float(b.volume),
+        )
 
     def get_latest_price(self, symbol: str) -> LatestPrice | None:
         request = StockLatestTradeRequest(symbol_or_symbols=symbol, feed=self._feed)
