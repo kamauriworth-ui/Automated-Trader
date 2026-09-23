@@ -131,9 +131,12 @@ def build_backtest_report(result: BacktestResult, show_all_trades: bool = False)
         LINE,
         f"  BACKTEST - {result.strategy_name} - {period.name.upper()} period {period.start} to {period.end}",
         LINE,
-        f"  Data: {result.feed_used.upper()} feed | {money(s.trade_amount)} per trade per stock | "
+        f"  Data: {result.feed_used.upper()} feed | {money(s.trade_amount)} per stock | "
         f"slippage {s.slippage_pct:g}% per buy and per sell",
+        f"  Reinvest profits: {'YES (each trade uses all the money)' if s.reinvest else 'no (fixed amount per trade)'}",
     ]
+    if result.strategy_description:
+        lines.append(f"  Rules: {result.strategy_description}")
     if period.name == "development" and s.holdout_years:
         lines.append(f"  The most recent {s.holdout_years} year(s) are SEALED. See them once, at the end, with --holdout.")
     if period.name == "holdout":

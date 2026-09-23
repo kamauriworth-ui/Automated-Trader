@@ -93,3 +93,20 @@ def test_backtest_defaults():
 def test_bad_backtest_settings_are_rejected(section):
     with pytest.raises(ConfigError):
         build_settings(GOOD_ENV, {**GOOD_FILE, "backtest": section})
+
+
+def test_volume_min_ratio_and_reinvest_settings():
+    settings = build_settings(
+        GOOD_ENV, {**GOOD_FILE, "strategy": {"volume_min_ratio": 0}, "backtest": {"reinvest": True}}
+    )
+    assert settings.strategy.volume_min_ratio == 0
+    assert settings.backtest.reinvest is True
+
+
+@pytest.mark.parametrize(
+    "file_data",
+    [{"strategy": {"volume_min_ratio": -1}}, {"strategy": {"volume_min_ratio": "high"}}, {"backtest": {"reinvest": "yes"}}],
+)
+def test_bad_volume_or_reinvest_settings_are_rejected(file_data):
+    with pytest.raises(ConfigError):
+        build_settings(GOOD_ENV, {**GOOD_FILE, **file_data})

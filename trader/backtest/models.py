@@ -13,6 +13,7 @@ class BacktestSettings:
     trade_amount: float = 10_000.0  # dollars used per trade
     slippage_pct: float = 0.05      # assumed price penalty per buy and per sell, in percent
     feed: str = "sip"               # preferred data feed; falls back to IEX if not allowed
+    reinvest: bool = False          # True = each trade uses ALL the money that stock's account has
 
 
 @dataclass(frozen=True)
@@ -65,3 +66,4 @@ class BacktestResult:
     feed_used: str
     settings: BacktestSettings
     symbols: list[SymbolResult]
+    strategy_description: str = ""

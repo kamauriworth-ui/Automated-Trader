@@ -6,7 +6,8 @@ evidence the rise is real, and step aside when the rise ends.
   BUY   when ALL are true:
           Uptrend  - last close above the long average, and short average above long
           Momentum - last close higher than `momentum_days` days ago
-          Volume   - last day's volume at least its recent average
+          Volume   - last day's volume at least `volume_min_ratio` x its recent average
+                     (1.0 = at least average; 0 = volume rule switched off)
   SELL  when the trend breaks: close below the long average, OR short average below long
   WATCH everything else, and whenever the data can't be trusted or is too short.
 
@@ -30,6 +31,7 @@ class TrendMomentumParams:
     momentum_days: int = 10
     volume_avg_days: int = 20
     atr_days: int = 14
+    volume_min_ratio: float = 1.0   # volume must be at least this many times its average; 0 = rule off
 
     @property
     def days_needed(self) -> int:
@@ -47,11 +49,22 @@ def compare_words(a: float, b: float) -> str:
     return "level with"
 
 
+def volume_check(ratio: float, minimum: float, days: int) -> Check:
+    if minimum <= 0:
+        return Check("Volume", True, f"rule OFF ({ratio:.2f}x its {days}-day average)")
+    return Check("Volume", ratio >= minimum, f"{ratio:.2f}x its {days}-day average (needs {minimum:g}x)")
+
+
 class TrendMomentumStrategy:
     name = "Trend/Momentum"
 
     def __init__(self, params: TrendMomentumParams | None = None) -> None:
         self.params = params or TrendMomentumParams()
+
+    def describe(self) -> str:
+        p = self.params
+        volume = "volume rule OFF" if p.volume_min_ratio <= 0 else f"volume >= {p.volume_min_ratio:g}x avg"
+        return f"{p.short_ma_days}/{p.long_ma_days}-day averages, {p.momentum_days}-day momentum, {volume}"
 
     def evaluate(self, snapshot: MarketSnapshot) -> SignalResult:
         p = self.params
@@ -88,7 +101,7 @@ class TrendMomentumStrategy:
                 f"{compare_words(short_ma, long_ma)} {p.long_ma_days}-day",
             ),
             Check("Momentum", momentum > 0, f"{percent(momentum)} vs {p.momentum_days} days ago"),
-            Check("Volume", vol_ratio >= 1.0, f"{vol_ratio:.2f}x its {p.volume_avg_days}-day average"),
+            volume_check(vol_ratio, p.volume_min_ratio, p.volume_avg_days),
         ]
         notes = [f"Volatility: typical daily move (ATR {p.atr_days}) {money(atr)} ({atr / close * 100:.1f}% of price)"]
 

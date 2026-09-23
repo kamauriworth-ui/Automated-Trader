@@ -42,6 +42,7 @@ strategy:
   momentum_days: 10     # compare today's close with this many days ago
   volume_avg_days: 20   # compare today's volume with the average of this many days
   atr_days: 14          # volatility measure (shown only; used for stop-losses in Phase 6)
+  volume_min_ratio: 1.0 # volume must be at least this x its average to BUY (0 = volume rule off)
 
 backtest:
   # How far back to test, in years. The most recent `holdout_years` are kept
@@ -52,3 +53,4 @@ backtest:
   trade_amount: 10000   # dollars per trade (Phase 6 replaces this with real position sizing)
   slippage_pct: 0.05    # assumed worse price on every buy AND every sell, in percent
   feed: sip             # full-market history if your data plan allows it; falls back to iex
+  reinvest: false       # true = each trade uses all the money that stock's account has

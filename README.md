@@ -57,6 +57,7 @@ A green check means everything passed.
    python -m trader signals          # BUY / SELL / WATCH per stock, with reasons (no orders)
    python -m trader backtest         # test the strategy on past years (development period)
    python -m trader backtest --holdout  # the sealed final exam: run once, at the end
+   # experiment options for backtest (one run only): --reinvest  --volume-min 0  --slippage 0.1
    ```
 
 Never paste your keys into code, chat messages, or screenshots.

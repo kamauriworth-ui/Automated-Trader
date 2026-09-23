@@ -9,7 +9,8 @@ For each day D in the test period:
      never anything later - and note what it wants to do tomorrow.
 
 Rules for now (Phase 6 will replace them with proper risk management):
-  - A fixed dollar amount per trade, whole shares only.
+  - A fixed dollar amount per trade (or, with `reinvest`, all the money that
+    stock's account has - so profits keep working, like buy & hold). Whole shares only.
   - At most one position per stock.
   - Exit only when the strategy says SELL. No stop-loss yet.
   - Each stock is tested separately, with its own starting money.
@@ -56,7 +57,8 @@ def run_symbol(strategy: Strategy, bars: list[Bar], period: Period, settings: Ba
             signal, reason = pending
             if signal == Signal.BUY and shares == 0:
                 price = bar.open * (1 + slip)
-                quantity = math.floor(min(settings.trade_amount, cash) / price)
+                budget = cash if settings.reinvest else min(settings.trade_amount, cash)
+                quantity = math.floor(budget / price)
                 if quantity > 0:
                     cash -= quantity * price
                     shares = quantity
@@ -104,4 +106,5 @@ def run_backtest(
     feed_used: str,
 ) -> BacktestResult:
     results = [run_symbol(strategy, bars, period, settings) for bars in bars_by_symbol.values() if bars]
-    return BacktestResult(strategy.name, period, feed_used, settings, results)
+    describe = getattr(strategy, "describe", None)
+    return BacktestResult(strategy.name, period, feed_used, settings, results, describe() if describe else "")

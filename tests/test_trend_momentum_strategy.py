@@ -89,3 +89,19 @@ def test_comparison_wording_matches_what_is_displayed():
     assert compare_words(301.0, 300.0) == "above"
     assert compare_words(299.0, 300.0) == "below"
     assert compare_words(300.996, 301.0) == "level with"   # both display as $301.00
+
+
+def test_volume_rule_can_be_loosened_or_switched_off():
+    weak_volume = series(RISING, last_volume=500_000)   # 0.5x average
+    looser = TrendMomentumStrategy(TrendMomentumParams(volume_min_ratio=0.5))
+    off = TrendMomentumStrategy(TrendMomentumParams(volume_min_ratio=0))
+    assert strategy.evaluate(snapshot(weak_volume)).signal == Signal.WATCH
+    assert looser.evaluate(snapshot(weak_volume)).signal == Signal.BUY
+    result = off.evaluate(snapshot(weak_volume))
+    assert result.signal == Signal.BUY
+    assert any("rule OFF" in c.detail for c in result.checks)
+
+
+def test_describe_states_the_rules_used():
+    assert TrendMomentumStrategy().describe() == "20/50-day averages, 10-day momentum, volume >= 1x avg"
+    assert "volume rule OFF" in TrendMomentumStrategy(TrendMomentumParams(volume_min_ratio=0)).describe()

@@ -114,3 +114,22 @@ def test_equity_is_recorded_for_every_test_day():
     result = run(SpyStrategy(), bars(15), first=5)
     assert [d for d, _ in result.equity] == [day(n) for n in range(5, 15)]
     assert all(value == 10_000 for _, value in result.equity)   # never traded: cash unchanged
+
+
+def test_without_reinvest_every_trade_uses_the_fixed_amount():
+    # price doubles between trade 1 and trade 2
+    candles = bars(20, close=lambda d: 100.0 if d < 5 else 200.0)
+    result = run(SpyStrategy({1: Signal.BUY, 7: Signal.SELL, 10: Signal.BUY}), candles)
+    second = result.trades[1]
+    assert second.shares * second.entry_price <= 10_000
+
+
+def test_with_reinvest_profits_are_used_in_the_next_trade():
+    candles = bars(20, close=lambda d: 100.0 if d < 5 else 200.0)
+    settings = BacktestSettings(trade_amount=10_000, slippage_pct=0.05, reinvest=True)
+    spy = SpyStrategy({1: Signal.BUY, 7: Signal.SELL, 10: Signal.BUY})
+    result = run_symbol(spy, candles, Period("test", day(0), day(19)), settings)
+    first, second = result.trades
+    cash_after_first = 10_000 + first.pnl
+    assert second.shares * second.entry_price > 10_000                 # bigger than the fixed amount
+    assert second.shares * second.entry_price <= cash_after_first       # but never more than it has

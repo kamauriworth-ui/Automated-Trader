@@ -139,6 +139,10 @@ def parse_strategy(raw: object) -> TrendMomentumParams:
         if not isinstance(value, int) or isinstance(value, bool) or not 2 <= value <= 250:
             raise ConfigError(f"strategy.{name} must be a whole number between 2 and 250.")
         values[name] = value
+    ratio = section.get("volume_min_ratio", defaults.volume_min_ratio)
+    if isinstance(ratio, bool) or not isinstance(ratio, (int, float)) or not 0 <= ratio <= 5:
+        raise ConfigError("strategy.volume_min_ratio must be a number between 0 and 5 (0 = rule off).")
+    values["volume_min_ratio"] = float(ratio)
     if values["short_ma_days"] >= values["long_ma_days"]:
         raise ConfigError("strategy.short_ma_days must be smaller than strategy.long_ma_days.")
     return TrendMomentumParams(**values)
@@ -161,6 +165,9 @@ def parse_backtest(raw: object) -> BacktestSettings:
     holdout = _number(section, "holdout_years", d.holdout_years, 0, 19, whole=True)
     if holdout >= years:
         raise ConfigError("backtest.holdout_years must be smaller than backtest.years.")
+    reinvest = section.get("reinvest", d.reinvest)
+    if not isinstance(reinvest, bool):
+        raise ConfigError("backtest.reinvest must be true or false.")
     feed = str(section.get("feed", d.feed)).strip().lower()
     if feed not in DATA_FEEDS:
         raise ConfigError(f"backtest.feed must be one of {DATA_FEEDS}, not '{feed}'.")
@@ -170,6 +177,7 @@ def parse_backtest(raw: object) -> BacktestSettings:
         trade_amount=float(_number(section, "trade_amount", d.trade_amount, 100, 1_000_000)),
         slippage_pct=float(_number(section, "slippage_pct", d.slippage_pct, 0, 2)),
         feed=feed,
+        reinvest=reinvest,
     )
 
 

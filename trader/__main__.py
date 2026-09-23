@@ -7,6 +7,10 @@
     python -m trader backtest        # test the strategy on past years (development period)
     python -m trader backtest --holdout   # the sealed final exam - run once, at the end
     python -m trader backtest --all-trades  # also print every single trade
+  Experiment options (override settings.yaml for one run only):
+    --reinvest          each trade uses all the money that stock's account has
+    --volume-min 0      how strict the volume rule is (1.0 = at least average, 0 = off)
+    --slippage 0.1      assumed cost per buy and per sell, in percent
 
 Everything so far only READS information. There is no code anywhere in the
 project that can place an order yet.
@@ -98,6 +102,33 @@ def show_signals(settings: Settings) -> None:
     print(build_signals_report(results, strategy.name, clock))
 
 
+def apply_backtest_overrides(settings: Settings, args: argparse.Namespace) -> Settings:
+    """Experiment options change the settings for this one run only."""
+    from dataclasses import replace
+
+    backtest, strategy = settings.backtest, settings.strategy
+    if args.reinvest:
+        backtest = replace(backtest, reinvest=True)
+    if args.slippage is not None:
+        backtest = replace(backtest, slippage_pct=args.slippage)
+    if args.volume_min is not None:
+        strategy = replace(strategy, volume_min_ratio=args.volume_min)
+    return replace(settings, backtest=backtest, strategy=strategy)
+
+
+def number_between(low: float, high: float):
+    """For command options: accept only a number in [low, high]."""
+    def check(text: str) -> float:
+        try:
+            value = float(text)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"'{text}' is not a number")
+        if not low <= value <= high:
+            raise argparse.ArgumentTypeError(f"must be between {low:g} and {high:g}")
+        return value
+    return check
+
+
 def run_backtest_command(settings: Settings, holdout: bool, all_trades: bool) -> None:
     from datetime import datetime, timedelta, timezone
 
@@ -142,6 +173,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     backtest = commands.add_parser("backtest", help="test the strategy on past years")
     backtest.add_argument("--holdout", action="store_true", help="run the sealed final-exam period instead")
     backtest.add_argument("--all-trades", action="store_true", help="print every trade, not just the best and worst")
+    backtest.add_argument("--reinvest", action="store_true", help="each trade uses all the money that stock's account has")
+    backtest.add_argument("--volume-min", type=number_between(0, 5), help="volume rule strictness (1.0 = average, 0 = off)")
+    backtest.add_argument("--slippage", type=number_between(0, 2), help="cost per buy and per sell, in percent")
     return parser.parse_args(argv)
 
 
@@ -160,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "signals":
             show_signals(settings)
         elif args.command == "backtest":
-            run_backtest_command(settings, args.holdout, args.all_trades)
+            run_backtest_command(apply_backtest_overrides(settings, args), args.holdout, args.all_trades)
         else:
             show_status(settings)
     except SafetyError as exc:
